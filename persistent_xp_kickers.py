@@ -9,3 +9,5 @@ address = ww2mod.lpBaseOfDll + re.search(rb'\xE8....\x84\xC0\x75\x18\x8B\x54\x24
 
 pm.write_bytes(address, b'\x90\x90', 2)
 pm.close_process()
+
+print('Patch applied successfully')
