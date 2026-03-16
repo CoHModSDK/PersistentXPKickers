@@ -23,9 +23,6 @@
     <Filter Include="lib\CoHModSDK\lib\x86">
       <UniqueIdentifier>{d93a870b-5dbd-4eee-90da-5c3b3e175eed}</UniqueIdentifier>
     </Filter>
-    <Filter Include="licenses">
-      <UniqueIdentifier>{568c7cb8-19be-4067-8722-1b28b36a78ed}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\dllmain.cpp">
@@ -50,11 +47,6 @@
     <None Include=".gitignore" />
     <None Include="LICENSE" />
     <None Include="README.md" />
-  </ItemGroup>
-  <ItemGroup>
-    <Text Include="licenses\CoHModSDK.txt">
-      <Filter>licenses</Filter>
-    </Text>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="res\resource.rc">
