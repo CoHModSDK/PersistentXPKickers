@@ -37,13 +37,14 @@ bool __cdecl HookedSub2641C0(void* _this) {
 }
 
 bool SetupHooks() {
-    std::uintptr_t sub2641C0Addr = ModSDK::Memory::FindPattern("WW2Mod.dll", "56 E8 ?? ?? ?? ?? 85 C0 75 03 32 C0");
+	HMODULE hGameModule = ModSDK::Memory::GetGameModuleHandle();
+    std::uintptr_t sub2641C0Addr = ModSDK::Memory::FindPattern(hGameModule, "56 E8 ?? ?? ?? ?? 85 C0 75 03 32 C0");
     if (!sub2641C0Addr) {
         MessageBoxA(nullptr, "Pattern not found", "Error", MB_ICONERROR);
         return false;
     }
 
-    std::uintptr_t xpKickerCheckAddr = ModSDK::Memory::FindPattern("WW2Mod.dll", "E8 ?? ?? ?? ?? 84 C0 75 18 8B 54 24 10");
+    std::uintptr_t xpKickerCheckAddr = ModSDK::Memory::FindPattern(hGameModule, "E8 ?? ?? ?? ?? 84 C0 75 18 8B 54 24 10");
     if (!xpKickerCheckAddr) {
         MessageBoxA(nullptr, "Caller pattern not found!", "Error", MB_ICONERROR);
         return false;
@@ -82,7 +83,7 @@ extern "C" {
     }
 
     __declspec(dllexport) const char* GetModVersion() {
-        return "1.0.0";
+        return "1.1.0";
     }
 
     __declspec(dllexport) const char* GetModAuthor() {
