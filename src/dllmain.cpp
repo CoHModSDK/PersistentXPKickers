@@ -1,18 +1,45 @@
 #include "CoHModSDK.hpp"
 
-#pragma comment(lib, "CoHModSDK.lib")
+namespace {
+	constexpr const char* kXpKickerCheckPattern = "E8 ?? ?? ?? ?? 84 C0 75 18 8B 54 24 10";
 
-void SetupPatch() {
-    std::uintptr_t xpKickerCheckAddr = ModSDK::Memory::FindPattern("WW2Mod.dll", "E8 ?? ?? ?? ?? 84 C0 75 18 8B 54 24 10");
-    if (!xpKickerCheckAddr) {
-        MessageBoxA(nullptr, "Caller pattern not found!", "Error", MB_ICONERROR);
-        return;
+    bool SetupPatch() {
+        const auto tXpKickerCheckResult = ModSDK::Memory::FindPattern("WW2Mod.dll", kXpKickerCheckPattern);
+        if (!tXpKickerCheckResult.has_value()) {
+            ModSDK::Dialogs::ShowError("Failed to find XpKickerCheck address");
+            return false;
+        }
+
+        // Patch the 5-byte `call` instruction to `xor al, al; nop; nop; nop` so this
+        // specific XP-kicker check behaves as if the original function returned false.
+        constexpr unsigned char patchBytes[] = { 0x32, 0xC0, 0x90, 0x90, 0x90 };
+		const auto tXpKickerCheck = reinterpret_cast<void*>(tXpKickerCheckResult.value());
+        ModSDK::Memory::PatchMemory(tXpKickerCheck, patchBytes, sizeof(patchBytes));
+
+        return true;
     }
 
-    // Patch the 5-byte `call` instruction to `xor al, al; nop; nop; nop` so this
-    // specific XP-kicker check behaves as if the original function returned false.
-    constexpr unsigned char patchBytes[] = { 0x32, 0xC0, 0x90, 0x90, 0x90 };
-    ModSDK::Memory::PatchMemory(reinterpret_cast<void*>(xpKickerCheckAddr), patchBytes, sizeof(patchBytes));
+    bool OnInitialize() {
+        return true;
+    }
+
+    bool OnModsLoaded() {
+        return SetupPatch();
+    }
+
+    void OnShutdown() {}
+
+    const CoHModSDKModuleV1 kModule = {
+        .abiVersion = COHMODSDK_ABI_VERSION,
+        .size = sizeof(CoHModSDKModuleV1),
+        .modId = "de.tosox.persistentxpkickers",
+        .name = "Persistent XP Kickers",
+        .version = "1.4.0",
+        .author = "Tosox",
+        .OnInitialize = &OnInitialize,
+        .OnModsLoaded = &OnModsLoaded,
+        .OnShutdown = &OnShutdown
+    };
 }
 
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD reason, LPVOID reserved) {
@@ -20,28 +47,4 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD reason, LPVOID reserved) {
     return TRUE;
 }
 
-extern "C" {
-    __declspec(dllexport) void OnSDKLoad() {
-        // Unused
-    }
-
-    __declspec(dllexport) void OnGameStart() {
-        SetupPatch();
-    }
-
-    __declspec(dllexport) void OnGameShutdown() {
-        // Unused
-    }
-
-    __declspec(dllexport) const char* GetModName() {
-        return "Persistent XP Kickers";
-    }
-
-    __declspec(dllexport) const char* GetModVersion() {
-        return "1.3.0";
-    }
-
-    __declspec(dllexport) const char* GetModAuthor() {
-        return "Tosox";
-    }
-}
+COHMODSDK_EXPORT_MODULE(kModule);
