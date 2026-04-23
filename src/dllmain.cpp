@@ -1,7 +1,14 @@
 #include "CoHModSDK.hpp"
 
+#include <cstring>
+
 namespace {
 	constexpr const char* kXpKickerCheckPattern = "E8 ?? ?? ?? ?? 84 C0 75 18 8B 54 24 10";
+
+    constexpr unsigned char kXpKickerCheckPatchedBytes[] = { 0x32, 0xC0, 0x90, 0x90, 0x90 };
+
+    void* tXpKickerCheck = nullptr;
+    char xpKickerCheckOriginalBytes[5] = {};
 
     bool SetupPatch() {
         const auto tXpKickerCheckResult = ModSDK::Memory::FindPattern("WW2Mod.dll", kXpKickerCheckPattern);
@@ -10,34 +17,42 @@ namespace {
             return false;
         }
 
+		tXpKickerCheck = reinterpret_cast<void*>(tXpKickerCheckResult.value());
+        std::memcpy(xpKickerCheckOriginalBytes, tXpKickerCheck, sizeof(xpKickerCheckOriginalBytes));
+
         // Patch the 5-byte `call` instruction to `xor al, al; nop; nop; nop` so this
         // specific XP-kicker check behaves as if the original function returned false.
-        constexpr unsigned char patchBytes[] = { 0x32, 0xC0, 0x90, 0x90, 0x90 };
-		const auto tXpKickerCheck = reinterpret_cast<void*>(tXpKickerCheckResult.value());
-        ModSDK::Memory::PatchMemory(tXpKickerCheck, patchBytes, sizeof(patchBytes));
+        ModSDK::Memory::PatchMemory(
+            tXpKickerCheck,
+            kXpKickerCheckPatchedBytes,
+            sizeof(kXpKickerCheckPatchedBytes)
+        );
 
         return true;
     }
 
     bool OnInitialize() {
-        return true;
-    }
-
-    bool OnModsLoaded() {
         return SetupPatch();
     }
 
-    void OnShutdown() {}
+    void OnShutdown() {
+        if (tXpKickerCheck != nullptr) {
+            ModSDK::Memory::PatchMemory(
+                tXpKickerCheck,
+                xpKickerCheckOriginalBytes,
+                sizeof(xpKickerCheckOriginalBytes)
+            );
+        }
+    }
 
     const CoHModSDKModuleV1 kModule = {
         .abiVersion = COHMODSDK_ABI_VERSION,
         .size = sizeof(CoHModSDKModuleV1),
         .modId = "de.tosox.persistentxpkickers",
         .name = "Persistent XP Kickers",
-        .version = "1.4.0",
+        .version = "1.5.0",
         .author = "Tosox",
         .OnInitialize = &OnInitialize,
-        .OnModsLoaded = &OnModsLoaded,
         .OnShutdown = &OnShutdown
     };
 }
